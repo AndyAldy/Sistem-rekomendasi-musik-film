@@ -67,9 +67,12 @@ app.get('/api/data', (req, res) => {
         };
       });
 
-      // 3. Gabungkan film dan musik lalu ACAK urutannya agar rapi & nyampur
+// 3. Gabungkan film dan musik lalu urutkan dari A-Z berdasarkan judul
       const combinedData = [...formattedMovies, ...formattedMusic];
-      combinedData.sort(() => Math.random() - 0.5);
+      
+      // localeCompare digunakan agar pengurutan abjadnya rapi, 
+      // tidak peduli huruf besar atau kecil
+      combinedData.sort((a, b) => a.title.localeCompare(b.title));
 
       res.json(combinedData);
     });
