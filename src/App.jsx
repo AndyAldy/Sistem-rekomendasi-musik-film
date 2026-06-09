@@ -2,13 +2,16 @@ import { useState, useEffect, useMemo } from 'react';
 import './App.css';
 
 function App() {
-  const [database, setDatabase] = useState([]); // Menyimpan gabungan data MySQL
+  const [database, setDatabase] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [targetItem, setTargetItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Mengambil data Film & Musik dari Backend Node.js
+  // --- STATE UNTUK PAGINATION ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Menampilkan 10 konten per halaman
+
   useEffect(() => {
     fetch('http://localhost:5000/api/data')
       .then(response => response.json())
@@ -22,21 +25,18 @@ function App() {
       });
   }, []);
 
-  // Logika Content-Based Filtering (Jaccard Similarity pada Genre)
   const getRecommendations = (item) => {
     return database
-      .filter((dbItem) => dbItem.id !== item.id) // Hindari merekomendasikan item itu sendiri
+      .filter((dbItem) => dbItem.id !== item.id)
       .map((dbItem) => {
-        // Mencari seberapa banyak genre yang sama antara item target dan item di database
         const intersection = dbItem.genres.filter(g => item.genres.includes(g));
         const score = intersection.length; 
         return { ...dbItem, score };
       })
-      .filter((dbItem) => dbItem.score > 0) // Tampilkan hanya yang punya skor kecocokan
-      .sort((a, b) => b.score - a.score); // Urutkan dari skor tertinggi ke terendah
+      .filter((dbItem) => dbItem.score > 0)
+      .sort((a, b) => b.score - a.score);
   };
 
-  // Mengelola data apa yang tampil di layar (Filter/Search/Rekomendasi)
   const displayedItems = useMemo(() => {
     if (targetItem) {
       return getRecommendations(targetItem);
@@ -48,6 +48,19 @@ function App() {
       return matchSearch && matchFilter;
     });
   }, [searchTerm, activeFilter, targetItem, database]);
+
+  // --- LOGIKA PEMOTONGAN DATA UNTUK PAGINATION ---
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = displayedItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(displayedItems.length / itemsPerPage);
+
+  // Fungsi untuk mengganti halaman
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    // Gulirkan layar ke atas dengan mulus saat pindah halaman
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="app-container">
@@ -65,6 +78,7 @@ function App() {
           onChange={(e) => {
             setSearchTerm(e.target.value);
             setTargetItem(null);
+            setCurrentPage(1);
           }}
         />
 
@@ -75,7 +89,8 @@ function App() {
               className={`btn-filter ${activeFilter === filter && !targetItem ? 'active' : ''}`}
               onClick={() => { 
                 setActiveFilter(filter); 
-                setTargetItem(null); 
+                setTargetItem(null);
+                setCurrentPage(1); 
               }}
             >
               {filter === 'All' ? 'Semua Kategori' : filter === 'Movie' ? '🎬 Film' : '🎵 Musik'}
@@ -85,17 +100,21 @@ function App() {
       </div>
 
       {targetItem && (
-        <div className="recommendation-header">
+<div className="recommendation-header">
           <h2>Rekomendasi mirip dengan: <span>{targetItem.title}</span></h2>
-          <button className="btn-clear" onClick={() => setTargetItem(null)}>Tutup Rekomendasi ✕</button>
+          <button className="btn-clear" onClick={() => {
+            setTargetItem(null);
+            setCurrentPage(1);
+          }}>Tutup Rekomendasi ✕</button>
         </div>
       )}
 
       <main className="grid-container">
         {isLoading ? (
           <div className="no-results">Memuat data dari MySQL XAMPP...</div>
-        ) : displayedItems.length > 0 ? (
-          displayedItems.map((item) => (
+        ) : currentItems.length > 0 ? (
+          /* Menggunakan currentItems (10 data) bukan displayedItems (Semua data) */
+          currentItems.map((item) => (
             <div className="card" key={item.id}>
               <div className="card-image">
                 <img src={item.image} alt={item.title} />
@@ -105,14 +124,16 @@ function App() {
                 <h3>{item.title}</h3>
                 <div className="tags">
                   {item.genres.map((genre, index) => (
-                    // Menggunakan index sebagai key cadangan jika ada genre duplikat
                     <span key={`${item.id}-${genre}-${index}`} className="tag">{genre}</span>
                   ))}
                 </div>
                 {!targetItem && (
                   <button 
                     className="btn-recommend"
-                    onClick={() => setTargetItem(item)}
+                    onClick={() => {
+                      setTargetItem(item);
+                      setCurrentPage(1);
+                    }}
                   >
                     Temukan yang Mirip ✨
                   </button>
@@ -124,6 +145,38 @@ function App() {
           <div className="no-results">Tidak ada data yang ditemukan.</div>
         )}
       </main>
+
+      {/* --- UI KONTROL PAGINATION --- */}
+      {!isLoading && displayedItems.length > itemsPerPage && (
+        <div className="pagination">
+          <button 
+            onClick={() => paginate(currentPage - 1)} 
+            disabled={currentPage === 1}
+            className="btn-page"
+          >
+            &laquo; Prev
+          </button>
+          
+          {/* Membuat tombol nomor halaman */}
+          {[...Array(totalPages)].map((_, index) => (
+            <button
+              key={index + 1}
+              onClick={() => paginate(index + 1)}
+              className={`btn-page ${currentPage === index + 1 ? 'active-page' : ''}`}
+            >
+              {index + 1}
+            </button>
+          ))}
+
+          <button 
+            onClick={() => paginate(currentPage + 1)} 
+            disabled={currentPage === totalPages}
+            className="btn-page"
+          >
+            Next &raquo;
+          </button>
+        </div>
+      )}
     </div>
   );
 }
