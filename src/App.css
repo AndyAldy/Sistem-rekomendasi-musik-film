@@ -196,8 +196,16 @@ body {
 }
 
 .card-content h3 {
-  font-size: 1.4rem;
-  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  margin-bottom: 0.8rem;
+  /* Aturan memotong teks yang terlalu panjang */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Maksimal 2 baris */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  height: 2.8em; /* Menjaga semua kartu punya tinggi yang sama rata */
 }
 
 .tags {

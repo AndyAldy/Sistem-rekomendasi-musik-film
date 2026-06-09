@@ -1,4 +1,3 @@
-// Ubah bagian require menjadi import
 import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
@@ -20,9 +19,7 @@ db.connect((err) => {
   console.log('Berhasil terhubung ke database MySQL!');
 });
 
-// Endpoint untuk mengambil gabungan data Film dan Musik
 app.get('/api/data', (req, res) => {
-  // Ambil 50 film dan 50 musik agar website tidak lag saat proses development
   const queryMovies = 'SELECT id, original_title as title, genres FROM tmdb_5000_movies LIMIT 50';
   const queryMusic = 'SELECT track_id as id, track_name as title, track_genre as genres FROM dataset_spotify LIMIT 50';
 
@@ -33,39 +30,47 @@ app.get('/api/data', (req, res) => {
       if (errMusic) return res.status(500).send(errMusic);
 
       // 1. Format Data Film
-const formattedMovies = resultsMovies.map(movie => {
-        
-        // Buat fungsi kecil untuk mengekstrak genre agar kode lebih bersih
+      const formattedMovies = resultsMovies.map(movie => {
         const getGenres = (genreString) => {
           try {
             return JSON.parse(genreString).map(g => g.name);
           } catch {
-            return []; // Jika gagal/error, langsung kembalikan array kosong
+            return ['Film']; 
           }
         };
         
+        // Mencegah error 'undefined' jika judul kosong dari database
+        const safeTitle = movie.title || 'Tanpa Judul';
+        
         return {
-          id: movie.id.toString(), // Jadikan string agar seragam dengan ID lagu Spotify
+          id: `movie_${movie.id}`, 
           type: 'Movie',
-          title: movie.title,
-          genres: getGenres(movie.genres), // Gunakan fungsinya di sini
-          image: 'https://images.unsplash.com/photo-1618519764620-7403abdbdf9c?w=500&q=80' 
+          title: safeTitle,
+          genres: getGenres(movie.genres),
+          // Bikin gambar inisial otomatis warna Biru
+          image: `https://ui-avatars.com/api/?name=${encodeURIComponent(safeTitle)}&background=0D8ABC&color=fff&size=512&bold=true`
         };
       });
 
       // 2. Format Data Musik (Spotify)
       const formattedMusic = resultsMusic.map(music => {
+        // Mencegah error 'undefined'
+        const safeTitle = music.title || 'Tanpa Judul';
+        
         return {
-          id: music.id,
+          id: `music_${music.id}`,
           type: 'Music',
-          title: music.title,
-          genres: [music.genres], // Masukkan ke dalam array agar seragam dengan format genre film
-          image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80'
+          title: safeTitle,
+          genres: music.genres ? [music.genres] : ['Musik'],
+          // Bikin gambar inisial otomatis warna Pink
+          image: `https://ui-avatars.com/api/?name=${encodeURIComponent(safeTitle)}&background=FF007F&color=fff&size=512&bold=true`
         };
       });
 
-      // 3. Gabungkan film dan musik lalu kirim ke React
+      // 3. Gabungkan film dan musik lalu ACAK urutannya agar rapi & nyampur
       const combinedData = [...formattedMovies, ...formattedMusic];
+      combinedData.sort(() => Math.random() - 0.5);
+
       res.json(combinedData);
     });
   });
