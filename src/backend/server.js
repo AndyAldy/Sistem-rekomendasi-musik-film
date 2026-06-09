@@ -33,20 +33,22 @@ app.get('/api/data', (req, res) => {
       if (errMusic) return res.status(500).send(errMusic);
 
       // 1. Format Data Film
-      const formattedMovies = resultsMovies.map(movie => {
-        let parsedGenres = [];
-        try {
-          const genreArray = JSON.parse(movie.genres);
-          parsedGenres = genreArray.map(g => g.name); // Ekstrak nama genre dari JSON
-        } catch (e) {
-          parsedGenres = [];
-        }
+const formattedMovies = resultsMovies.map(movie => {
+        
+        // Buat fungsi kecil untuk mengekstrak genre agar kode lebih bersih
+        const getGenres = (genreString) => {
+          try {
+            return JSON.parse(genreString).map(g => g.name);
+          } catch {
+            return []; // Jika gagal/error, langsung kembalikan array kosong
+          }
+        };
         
         return {
           id: movie.id.toString(), // Jadikan string agar seragam dengan ID lagu Spotify
           type: 'Movie',
           title: movie.title,
-          genres: parsedGenres,
+          genres: getGenres(movie.genres), // Gunakan fungsinya di sini
           image: 'https://images.unsplash.com/photo-1618519764620-7403abdbdf9c?w=500&q=80' 
         };
       });
