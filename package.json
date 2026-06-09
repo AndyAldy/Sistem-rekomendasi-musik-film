@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mysql2": "^3.22.5",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
@@ -26,5 +29,18 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "vite": "^8.0.12"
-  }
+  },
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AndyAldy/Sistem-rekomendasi-musik-film.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AndyAldy/Sistem-rekomendasi-musik-film/issues"
+  },
+  "homepage": "https://github.com/AndyAldy/Sistem-rekomendasi-musik-film#readme"
 }
