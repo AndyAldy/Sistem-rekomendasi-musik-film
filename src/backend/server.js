@@ -8,7 +8,7 @@ app.use(express.json());
 
 // Konfigurasi koneksi ke MySQL XAMPP
 const db = mysql.createConnection({
-  host: 'ap-southeast-1',
+  host: 'https://sgxmypxkeekeollpaowa.supabase.co',
   user: 'AndyAldy',      
   password: 'musikfilm0913',      
   database: 'db_rekomendasi',
