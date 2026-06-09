@@ -8,7 +8,7 @@ app.use(express.json());
 
 // Konfigurasi koneksi ke MySQL XAMPP
 const db = mysql.createConnection({
-  host: 'localhost',
+  host: '127.0.0.1',
   user: 'root',      
   password: '',      
   database: 'db_rekomendasi'
@@ -21,7 +21,7 @@ db.connect((err) => {
 
 app.get('/api/data', (req, res) => {
   const queryMovies = 'SELECT id, original_title as title, genres FROM tmdb_5000_movies LIMIT 50';
-  const queryMusic = 'SELECT track_id as id, track_name as title, track_genre as genres FROM dataset_spotify LIMIT 50';
+  const queryMusic = 'SELECT track_id as id, track_name as title, track_genre as genres FROM dataset_musik LIMIT 50';
 
   db.query(queryMovies, (errMovies, resultsMovies) => {
     if (errMovies) return res.status(500).send(errMovies);

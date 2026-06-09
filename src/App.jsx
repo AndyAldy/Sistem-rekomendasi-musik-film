@@ -1,6 +1,56 @@
 import { useState, useEffect, useMemo } from 'react';
 import './App.css';
 
+// Komponen Pemuat Poster Film Asli
+const MovieCover = ({ movieId, title }) => {
+  // Gambar default inisial sebelum gambar asli termuat
+  const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(title)}&background=0D8ABC&color=fff&size=512`;
+  const [imgSrc, setImgSrc] = useState(fallbackImg);
+
+  useEffect(() => {
+    // Ekstrak ID angka dari string "movie_19995"
+    const id = movieId.split('_')[1]; 
+    const API_KEY = 'ca4f3828b6e8b4764680b2e3b503be8d'; // <-- GANTI DENGAN KEY TMDB KAMU
+    
+    fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.poster_path) {
+          // TMDB menyediakan gambar dalam berbagai ukuran, w500 adalah kualitas menengah
+          setImgSrc(`https://image.tmdb.org/t/p/w500${data.poster_path}`);
+        }
+      })
+      .catch(() => {}); // Jika error (misal offline), tetap pakai gambar default
+  }, [movieId, title]);
+
+  return <img src={imgSrc} alt={title} />;
+};
+
+// Komponen Pemuat Cover Musik Asli (Tanpa API Key!)
+const MusicCover = ({ title }) => {
+  // Gambar default/loading berupa inisial warna pink
+  const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(title)}&background=FF007F&color=fff&size=512`;
+  const [imgSrc, setImgSrc] = useState(fallbackImg);
+
+  useEffect(() => {
+    // Mencari lagu di database publik iTunes berdasarkan judulnya
+    fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=song&limit=1`)
+      .then(res => res.json())
+      .then(data => {
+        // Jika lagunya ditemukan di iTunes
+        if (data.results && data.results.length > 0) {
+          // iTunes memberikan gambar 100x100px. Kita ubah URL-nya agar memuat ukuran HD 500x500px
+          const hqImage = data.results[0].artworkUrl100.replace('100x100bb', '500x500bb');
+          setImgSrc(hqImage);
+        }
+      })
+      .catch(() => {
+        // Jika gagal (misal tidak ada internet), biarkan tetap pakai gambar inisial pink
+      });
+  }, [title]);
+
+  return <img src={imgSrc} alt={title} />;
+};
 function App() {
   const [database, setDatabase] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -116,8 +166,12 @@ function App() {
           /* Menggunakan currentItems (10 data) bukan displayedItems (Semua data) */
           currentItems.map((item) => (
             <div className="card" key={item.id}>
-              <div className="card-image">
-                <img src={item.image} alt={item.title} />
+<div className="card-image">
+                {item.type === 'Movie' ? (
+                  <MovieCover movieId={item.id} title={item.title} />
+                ) : (
+                  <MusicCover title={item.title} />
+                )}
                 <div className="badge">{item.type}</div>
               </div>
               <div className="card-content">
