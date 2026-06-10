@@ -22,7 +22,7 @@ db.connect((err) => {
 
 app.get('/api/data', (req, res) => {
   const queryMovies = 'SELECT id, original_title as title, genres FROM tmdb_5000_movies LIMIT 50';
-  const queryMusic = 'SELECT track_id as id, track_name as title, track_genre as genres FROM dataset_musik LIMIT 50';
+  const queryMusic = 'SELECT track_id from id, track_name as title, track_genre as genres FROM dataset_musik LIMIT 50';
 
   db.query(queryMovies, (errMovies, resultsMovies) => {
     if (errMovies) return res.status(500).send(errMovies);
