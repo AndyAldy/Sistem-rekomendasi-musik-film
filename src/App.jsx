@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import './App.css';
+import { createClient } from '@supabase/supabase-js';
+
+// Hubungkan React langsung ke Supabase (Ganti ANON_KEY dengan key dari dashboardmu)
+const supabaseUrl = 'https://sgxmypxkeekeollpaowa.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNneG15cHhrZWVrZW9sbHBhb3dhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDgxNzAsImV4cCI6MjA5NjU4NDE3MH0.ngTzXSF_ngVSlWaoTnVf9yyvv3Ct5JBst3tQ0r2ynEE'; 
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 
 // Komponen Pemuat Poster Film Asli
 const MovieCover = ({ movieId, title }) => {
@@ -51,6 +58,7 @@ const MusicCover = ({ title }) => {
 
   return <img src={imgSrc} alt={title} />;
 };
+
 function App() {
   const [database, setDatabase] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,17 +70,58 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // Menampilkan 10 konten per halaman
 
+  // --- LOGIKA MENGAMBIL DATA LANGSUNG DARI SUPABASE ---
   useEffect(() => {
-    fetch('http://localhost:5000/api/data')
-      .then(response => response.json())
-      .then(data => {
-        setDatabase(data);
+    const fetchData = async () => {
+      try {
+        // 1. Ambil Film
+        const { data: movies, error: errMovies } = await supabase
+          .from('tmdb_5000_movies')
+          .select('id, original_title, genres')
+          .limit(50);
+        if (errMovies) throw errMovies;
+
+        // 2. Ambil Musik
+        const { data: music, error: errMusic } = await supabase
+          .from('dataset_musik') 
+          .select('track_id, track_name, track_genre')
+          .limit(50);
+        if (errMusic) throw errMusic;
+
+        // 3. Format Data Film
+        const formattedMovies = movies.map(movie => {
+          const getGenres = (g) => {
+            try { return (typeof g === 'string' ? JSON.parse(g) : g).map(x => x.name); } 
+            catch { return ['Film']; }
+          };
+          const title = movie.original_title || 'Tanpa Judul';
+          return {
+            id: `movie_${movie.id}`, type: 'Movie', title, genres: getGenres(movie.genres),
+            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(title)}&background=0D8ABC&color=fff`
+          };
+        });
+
+        // 4. Format Data Musik
+        const formattedMusic = music.map(item => {
+          const title = item.track_name || 'Tanpa Judul';
+          return {
+            id: `music_${item.track_id}`, type: 'Music', title, genres: item.track_genre ? [item.track_genre] : ['Musik'],
+            image: `https://ui-avatars.com/api/?name=${encodeURIComponent(title)}&background=FF007F&color=fff`
+          };
+        });
+
+        // Gabungkan dan urutkan
+        const combinedData = [...formattedMovies, ...formattedMusic].sort((a, b) => a.title.localeCompare(b.title));
+        
+        setDatabase(combinedData);
         setIsLoading(false);
-      })
-      .catch(error => {
-        console.error('Gagal mengambil data:', error);
+      } catch (error) {
+        console.error('Gagal mengambil data dari Supabase:', error);
         setIsLoading(false);
-      });
+      }
+    };
+
+    fetchData();
   }, []);
 
   const getRecommendations = (item) => {
@@ -150,7 +199,7 @@ function App() {
       </div>
 
       {targetItem && (
-<div className="recommendation-header">
+        <div className="recommendation-header">
           <h2>Rekomendasi mirip dengan: <span>{targetItem.title}</span></h2>
           <button className="btn-clear" onClick={() => {
             setTargetItem(null);
@@ -161,12 +210,12 @@ function App() {
 
       <main className="grid-container">
         {isLoading ? (
-          <div className="no-results">Memuat data dari MySQL XAMPP...</div>
+          <div className="no-results">Memuat data dari database Cloud...</div>
         ) : currentItems.length > 0 ? (
           /* Menggunakan currentItems (10 data) bukan displayedItems (Semua data) */
           currentItems.map((item) => (
             <div className="card" key={item.id}>
-<div className="card-image">
+              <div className="card-image">
                 {item.type === 'Movie' ? (
                   <MovieCover movieId={item.id} title={item.title} />
                 ) : (
