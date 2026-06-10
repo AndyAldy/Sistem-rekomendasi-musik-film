@@ -1,85 +1,83 @@
 import express from 'express';
-import mysql from 'mysql2';
 import cors from 'cors';
+import { createClient } from '@supabase/supabase-js';
 
 const app = express();
 app.use(cors()); 
 app.use(express.json());
 
-// Konfigurasi koneksi ke MySQL XAMPP
-const db = mysql.createConnection({
-  host: 'https://sgxmypxkeekeollpaowa.supabase.co',
-  user: 'AndyAldy',      
-  password: 'musikfilm0913',      
-  database: 'db_rekomendasi',
-  port: 5432
-});
+// Konfigurasi resmi Supabase
+const supabaseUrl = 'https://sgxmypxkeekeollpaowa.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNneG15cHhrZWVrZW9sbHBhb3dhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDgxNzAsImV4cCI6MjA5NjU4NDE3MH0.ngTzXSF_ngVSlWaoTnVf9yyvv3Ct5JBst3tQ0r2ynEE'; // <-- Ganti dengan key dari Dasbor API
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-db.connect((err) => {
-  if (err); 
-  console.log('Berhasil terhubung ke database MySQL!');
-});
+app.get('/api/data', async (req, res) => {
+  try {
+    // 1. Ambil data Film dari tabel Supabase
+    const { data: movies, error: errMovies } = await supabase
+      .from('tmdb_5000_movies')
+      .select('id, original_title, genres')
+      .limit(50);
 
-app.get('/api/data', (req, res) => {
-  const queryMovies = 'SELECT id, original_title as title, genres FROM tmdb_5000_movies LIMIT 50';
-  const queryMusic = 'SELECT track_id from id, track_name as title, track_genre as genres FROM dataset_musik LIMIT 50';
+    if (errMovies) throw errMovies;
 
-  db.query(queryMovies, (errMovies, resultsMovies) => {
-    if (errMovies) return res.status(500).send(errMovies);
+    // 2. Ambil data Musik dari tabel Supabase
+    // Pastikan nama tabelmu di Supabase benar-benar 'dataset_musik'
+    const { data: music, error: errMusic } = await supabase
+      .from('dataset_musik') 
+      .select('id,  track_id, track_name, track_genre')
+      .limit(50);
 
-    db.query(queryMusic, (errMusic, resultsMusic) => {
-      if (errMusic) return res.status(500).send(errMusic);
+    if (errMusic) throw errMusic;
 
-      // 1. Format Data Film
-      const formattedMovies = resultsMovies.map(movie => {
-        const getGenres = (genreString) => {
-          try {
-            return JSON.parse(genreString).map(g => g.name);
-          } catch {
-            return ['Film']; 
-          }
-        };
-        
-        // Mencegah error 'undefined' jika judul kosong dari database
-        const safeTitle = movie.title || 'Tanpa Judul';
-        
-        return {
-          id: `movie_${movie.id}`, 
-          type: 'Movie',
-          title: safeTitle,
-          genres: getGenres(movie.genres),
-          // Bikin gambar inisial otomatis warna Biru
-          image: `https://ui-avatars.com/api/?name=${encodeURIComponent(safeTitle)}&background=0D8ABC&color=fff&size=512&bold=true`
-        };
-      });
-
-      // 2. Format Data Musik (Spotify)
-      const formattedMusic = resultsMusic.map(music => {
-        // Mencegah error 'undefined'
-        const safeTitle = music.title || 'Tanpa Judul';
-        
-        return {
-          id: `music_${music.id}`,
-          type: 'Music',
-          title: safeTitle,
-          genres: music.genres ? [music.genres] : ['Musik'],
-          // Bikin gambar inisial otomatis warna Pink
-          image: `https://ui-avatars.com/api/?name=${encodeURIComponent(safeTitle)}&background=FF007F&color=fff&size=512&bold=true`
-        };
-      });
-
-// 3. Gabungkan film dan musik lalu urutkan dari A-Z berdasarkan judul
-      const combinedData = [...formattedMovies, ...formattedMusic];
+    // 3. Format Data Film
+    const formattedMovies = movies.map(movie => {
+      const getGenres = (genreString) => {
+        try {
+          // Supabase kadang mengembalikan teks JSON, kadang langsung objek. Ini solusinya:
+          const parsed = typeof genreString === 'string' ? JSON.parse(genreString) : genreString;
+          return parsed.map(g => g.name);
+        } catch {
+          return ['Film']; 
+        }
+      };
       
-      // localeCompare digunakan agar pengurutan abjadnya rapi, 
-      // tidak peduli huruf besar atau kecil
-      combinedData.sort((a, b) => a.title.localeCompare(b.title));
-
-      res.json(combinedData);
+      const safeTitle = movie.original_title || 'Tanpa Judul';
+      
+      return {
+        id: `movie_${movie.id}`, 
+        type: 'Movie',
+        title: safeTitle,
+        genres: getGenres(movie.genres),
+        image: `https://ui-avatars.com/api/?name=${encodeURIComponent(safeTitle)}&background=0D8ABC&color=fff&size=512&bold=true`
+      };
     });
-  });
+
+    // 4. Format Data Musik
+    const formattedMusic = music.map(item => {
+      const safeTitle = item.track_name || 'Tanpa Judul';
+      
+      return {
+        id: `music_${item.track_id}`,
+        type: 'Music',
+        title: safeTitle,
+        genres: item.track_genre ? [item.track_genre] : ['Musik'],
+        image: `https://ui-avatars.com/api/?name=${encodeURIComponent(safeTitle)}&background=FF007F&color=fff&size=512&bold=true`
+      };
+    });
+
+    // 5. Gabungkan dan urutkan A-Z
+    const combinedData = [...formattedMovies, ...formattedMusic];
+    combinedData.sort((a, b) => a.title.localeCompare(b.title));
+
+    res.json(combinedData);
+
+  } catch (error) {
+    console.error("Terjadi kesalahan saat menarik data:", error);
+    res.status(500).json({ error: "Gagal menarik data dari Cloud Database" });
+  }
 });
 
 app.listen(5000, () => {
-  console.log('Server Backend berjalan di http://localhost:5000');
+  console.log('Server Backend Supabase berjalan di http://localhost:5000');
 });
