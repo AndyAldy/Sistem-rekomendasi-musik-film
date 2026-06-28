@@ -7,8 +7,8 @@ app.use(cors());
 app.use(express.json());
 
 // Konfigurasi resmi Supabase
-const supabaseUrl = 'https://sgxmypxkeekeollpaowa.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNneG15cHhrZWVrZW9sbHBhb3dhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDgxNzAsImV4cCI6MjA5NjU4NDE3MH0.ngTzXSF_ngVSlWaoTnVf9yyvv3Ct5JBst3tQ0r2ynEE'; // <-- Ganti dengan key dari Dasbor API
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.get('/api/data', async (req, res) => {

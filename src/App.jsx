@@ -124,15 +124,26 @@ function App() {
     fetchData();
   }, []);
 
+// --- ALGORITMA CONTENT-BASED FILTERING ---
+  // Menggunakan Jaccard Similarity untuk mencocokkan genre item
   const getRecommendations = (item) => {
     return database
       .filter((dbItem) => dbItem.id !== item.id)
       .map((dbItem) => {
+        // 1. Hitung Irisan (Intersection): Genre yang sama antara item target dan item di database
         const intersection = dbItem.genres.filter(g => item.genres.includes(g));
-        const score = intersection.length; 
+        
+        // 2. Hitung Gabungan (Union): Total genre unik dari kedua item
+        const union = new Set([...item.genres, ...dbItem.genres]);
+        
+        // 3. Hitung Skor Kemiripan Jaccard (Jaccard Index)
+        const score = intersection.length / union.size; 
+        
         return { ...dbItem, score };
       })
+      // Hanya tampilkan item yang memiliki skor kemiripan lebih dari 0
       .filter((dbItem) => dbItem.score > 0)
+      // Urutkan dari skor kemiripan yang paling tinggi ke rendah
       .sort((a, b) => b.score - a.score);
   };
 
