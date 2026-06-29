@@ -78,14 +78,14 @@ function App() {
         const { data: movies, error: errMovies } = await supabase
           .from('tmdb_5000_movies')
           .select('id, original_title, genres')
-          .limit(50);
+          .limit(300);
         if (errMovies) throw errMovies;
 
         // 2. Ambil Musik
         const { data: music, error: errMusic } = await supabase
           .from('dataset_musik') 
           .select('track_id, track_name, track_genre')
-          .limit(50);
+          .limit(300);
         if (errMusic) throw errMusic;
 
         // 3. Format Data Film
