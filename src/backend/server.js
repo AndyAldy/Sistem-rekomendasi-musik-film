@@ -28,33 +28,34 @@ app.get('/api/data', async (req, res) => {
     let movies = [];
     let music = [];
 
-    // ==========================================
-    // DATA FILM (Coba Supabase -> Fallback XAMPP)
+// ==========================================
+    // DATA FILM 
     // ==========================================
     const { data: supaMovies, error: errMovies } = await supabase
       .from('tmdb_5000_movies')
       .select('id, original_title, genres')
-      .limit(5000);
+      .limit(500); // 👈 Ubah dari 50 menjadi 500
 
     if (errMovies || !supaMovies || supaMovies.length === 0) {
       console.warn("⚠️ Data film Supabase kosong/error. Mengambil dari MySQL XAMPP...");
-      const [localRows] = await localDb.query('SELECT id, original_title, genres FROM tmdb_5000_movies LIMIT 50');
+      // Jangan lupa ubah limit di query lokalnya juga jika pakai fallback
+      const [localRows] = await localDb.query('SELECT id, original_title, genres FROM tmdb_5000_movies LIMIT 500'); 
       movies = localRows;
     } else {
       movies = supaMovies;
     }
 
     // ==========================================
-    // DATA MUSIK (Coba Supabase -> Fallback XAMPP)
+    // DATA MUSIK 
     // ==========================================
     const { data: supaMusic, error: errMusic } = await supabase
       .from('dataset_musik') 
       .select('id, track_id, track_name, track_genre')
-      .limit(5000);
+      .limit(500); // 👈 Ubah dari 50 menjadi 500
 
     if (errMusic || !supaMusic || supaMusic.length === 0) {
       console.warn("⚠️ Data musik Supabase kosong/error. Mengambil dari MySQL XAMPP...");
-      const [localRows] = await localDb.query('SELECT id, track_id, track_name, track_genre FROM dataset_musik LIMIT 50');
+      const [localRows] = await localDb.query('SELECT id, track_id, track_name, track_genre FROM dataset_musik LIMIT 500');
       music = localRows;
     } else {
       music = supaMusic;
