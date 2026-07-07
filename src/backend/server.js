@@ -1,40 +1,68 @@
 import express from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
+import mysql from 'mysql2/promise'; // Tambahkan ini untuk koneksi XAMPP
 
 const app = express();
 app.use(cors()); 
 app.use(express.json());
 
-// Konfigurasi resmi Supabase
+// --- 1. Konfigurasi Supabase (Cloud) ---
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// --- 2. Konfigurasi MySQL XAMPP (Local Fallback) ---
+const localDb = mysql.createPool({
+  host: 'localhost',
+  user: 'root',      // Default user XAMPP
+  password: '',      // Default password XAMPP (kosong)
+  database: 'db_rekomendasi' // Ganti dengan nama database kamu di phpMyAdmin
+});
+
 app.get('/api/data', async (req, res) => {
   try {
-    // 1. Ambil data Film dari tabel Supabase
-    const { data: movies, error: errMovies } = await supabase
+    let movies = [];
+    let music = [];
+
+    // ==========================================
+    // DATA FILM (Coba Supabase -> Fallback XAMPP)
+    // ==========================================
+    const { data: supaMovies, error: errMovies } = await supabase
       .from('tmdb_5000_movies')
       .select('id, original_title, genres')
-      .limit(50);
+      .limit(500);
 
-    if (errMovies) throw errMovies;
+    if (errMovies || !supaMovies || supaMovies.length === 0) {
+      console.warn("⚠️ Data film Supabase kosong/error. Mengambil dari MySQL XAMPP...");
+      const [localRows] = await localDb.query('SELECT id, original_title, genres FROM tmdb_5000_movies LIMIT 50');
+      movies = localRows;
+    } else {
+      movies = supaMovies;
+    }
 
-    // 2. Ambil data Musik dari tabel Supabase
-    // Pastikan nama tabelmu di Supabase benar-benar 'dataset_musik'
-    const { data: music, error: errMusic } = await supabase
+    // ==========================================
+    // DATA MUSIK (Coba Supabase -> Fallback XAMPP)
+    // ==========================================
+    const { data: supaMusic, error: errMusic } = await supabase
       .from('dataset_musik') 
-      .select('id,  track_id, track_name, track_genre')
-      .limit(50);
+      .select('id, track_id, track_name, track_genre')
+      .limit(500);
 
-    if (errMusic) throw errMusic;
+    if (errMusic || !supaMusic || supaMusic.length === 0) {
+      console.warn("⚠️ Data musik Supabase kosong/error. Mengambil dari MySQL XAMPP...");
+      const [localRows] = await localDb.query('SELECT id, track_id, track_name, track_genre FROM dataset_musik LIMIT 50');
+      music = localRows;
+    } else {
+      music = supaMusic;
+    }
 
-    // 3. Format Data Film
+    // ==========================================
+    // FORMATTING & PENGGABUNGAN DATA
+    // ==========================================
     const formattedMovies = movies.map(movie => {
       const getGenres = (genreString) => {
         try {
-          // Supabase kadang mengembalikan teks JSON, kadang langsung objek. Ini solusinya:
           const parsed = typeof genreString === 'string' ? JSON.parse(genreString) : genreString;
           return parsed.map(g => g.name);
         } catch {
@@ -53,7 +81,6 @@ app.get('/api/data', async (req, res) => {
       };
     });
 
-    // 4. Format Data Musik
     const formattedMusic = music.map(item => {
       const safeTitle = item.track_name || 'Tanpa Judul';
       
@@ -66,18 +93,17 @@ app.get('/api/data', async (req, res) => {
       };
     });
 
-    // 5. Gabungkan dan urutkan A-Z
     const combinedData = [...formattedMovies, ...formattedMusic];
     combinedData.sort((a, b) => a.title.localeCompare(b.title));
 
     res.json(combinedData);
 
   } catch (error) {
-    console.error("Terjadi kesalahan saat menarik data:", error);
-    res.status(500).json({ error: "Gagal menarik data dari Cloud Database" });
+    console.error("Terjadi kesalahan:", error);
+    res.status(500).json({ error: "Gagal menarik data dari Supabase maupun MySQL XAMPP" });
   }
 });
 
 app.listen(5000, () => {
-  console.log('Server Backend Supabase berjalan di http://localhost:5000');
+  console.log('Server berjalan di http://localhost:5000');
 });
