@@ -17,7 +17,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- 2. Konfigurasi MySQL XAMPP (Local Fallback) ---
 const localDb = mysql.createPool({
-  host: 'localhost',
+  host: '127.0.0.1',
   user: 'root',      // Default user XAMPP
   password: '',      // Default password XAMPP (kosong)
   database: 'db_rekomendasi' // Ganti dengan nama database kamu di phpMyAdmin
@@ -34,7 +34,7 @@ app.get('/api/data', async (req, res) => {
     const { data: supaMovies, error: errMovies } = await supabase
       .from('tmdb_5000_movies')
       .select('id, original_title, genres')
-      .limit(500);
+      .limit(5000);
 
     if (errMovies || !supaMovies || supaMovies.length === 0) {
       console.warn("⚠️ Data film Supabase kosong/error. Mengambil dari MySQL XAMPP...");
@@ -50,7 +50,7 @@ app.get('/api/data', async (req, res) => {
     const { data: supaMusic, error: errMusic } = await supabase
       .from('dataset_musik') 
       .select('id, track_id, track_name, track_genre')
-      .limit(500);
+      .limit(5000);
 
     if (errMusic || !supaMusic || supaMusic.length === 0) {
       console.warn("⚠️ Data musik Supabase kosong/error. Mengambil dari MySQL XAMPP...");
