@@ -9,7 +9,7 @@ const MovieCover = ({ movieId, title }) => {
   useEffect(() => {
     // Ekstrak ID angka dari string "movie_19995"
     const id = movieId.split('_')[1]; 
-    const API_KEY = import.meta.env.VITE_TMDB_API_KEY; // Pastikan ini ada di .env frontend
+    const API_KEY ='ca4f3828b6e8b4764680b2e3b503be8d'
     
     fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}`)
       .then(res => res.json())
