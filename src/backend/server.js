@@ -1,15 +1,18 @@
+/* eslint-disable no-undef */
 import express from 'express';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
-import mysql from 'mysql2/promise'; // Tambahkan ini untuk koneksi XAMPP
+import mysql from 'mysql2/promise';
+import 'dotenv/config'; // Tambahkan baris ini untuk membaca file .env
 
 const app = express();
 app.use(cors()); 
 app.use(express.json());
 
 // --- 1. Konfigurasi Supabase (Cloud) ---
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY; 
+// Ubah import.meta.env menjadi process.env
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- 2. Konfigurasi MySQL XAMPP (Local Fallback) ---
