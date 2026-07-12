@@ -18,6 +18,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // --- 2. Konfigurasi MySQL XAMPP (Local Fallback) ---
 const localDb = mysql.createPool({
   host: '127.0.0.1',
+  port: 3307,
   user: 'root',      // Default user XAMPP
   password: '',      // Default password XAMPP (kosong)
   database: 'db_rekomendasi' // Ganti dengan nama database kamu di phpMyAdmin
